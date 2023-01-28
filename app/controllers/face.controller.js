@@ -1,5 +1,4 @@
 require('dotenv').config()
-const crypto = require('crypto')
 const AWS = require('aws-sdk')
 AWS.config.update({
     accessKeyId: process.env.AWS_ACCESS_KEY_ID,
@@ -10,8 +9,10 @@ AWS.config.update({
 const rekognition = new AWS.Rekognition()
 const s3 = new AWS.S3()
 
-const bucket = 'wajahfikasi-speed'
-const collectionId = 'wajahfikasi-speed'
+const bucket = process.env.AWS_BUCKET_NAME
+const collectionId = process.env.AWS_COLLECTION_ID
+
+const randomKey = Math.floor(Math.random() * 1000000)
 
 const detectFace = (req, res) => {
     let image = req.file.buffer
@@ -44,47 +45,40 @@ const detectFace = (req, res) => {
                         error: err
                     });
                 } else {
-                    if(data.FaceMatches){
-                        if(Object.keys(data.FaceMatches).length > 0){
-                            console.log("gambar sudah ada");
-                            res.status(200).json({
-                                message: "gambar sudah ada"
-                            })
-                        }else { 
-                            console.log("gambar tidak ada");
-                            res.status(200).json({
-                                message: "gambar tidak ada"
-                            })
+                    if(Object.keys(data.FaceMatches).length > 0){
+                        console.log("Face Matches");
+                        res.status(200).json({
+                            message: "Face Matches",
+                            data: data.FaceMatches[0].Face.ExternalImageId
+                        })
+                    }else { 
+                        console.log("Face Unmatches");
+                        res.status(200).json({
+                            message: "Face Unmatches",
+                        })
 
-                            const encryptionKey = 'example';
-                            const encriptName = crypto.createHash('sha256', encryptionKey).update(image).digest('hex')
-                            let uploadParams = {
-                                Bucket : bucket,
-                                Key: encriptName,
-                                Body: image,
-                                ContentType: 'image/jpeg'
+                        let uploadParams = {
+                            Bucket : bucket,
+                            Key: `${randomKey}-${req.file.originalname}`,
+                            Body: image,
+                            ContentType: 'image/jpeg'
+                        }
+                        s3.upload(uploadParams, (err, data) => {
+                            if(err) throw err
+                            console.log(data);
+                            let indexParams = {
+                                CollectionId: collectionId,
+                                Image: {
+                                    Bytes: image
+                                },
+                                ExternalImageId: req.file.originalname
                             }
-                            s3.upload(uploadParams, (err, data) => {
+                            rekognition.indexFaces(indexParams, (err, data) => {
                                 if(err) throw err
                                 console.log(data);
-                                
-                                let indexParams = {
-                                    CollectionId: collectionId,
-                                    Image: {
-                                        S3Object: {
-                                            Bucket: bucket  ,
-                                            Name: encriptName
-                                        }
-                                    }
-                                }
-                                rekognition.indexFaces(indexParams, (err, data) => {
-                                    if(err) throw err
-                                    console.log(data);
-                                })
                             })
-                        }
-                    }else {
-                        console.log("gambar tidak ada");
+                        })
+                        
                     }
                 }
             })
@@ -106,7 +100,7 @@ const deleteFace = (req, res) => {
                     res.status(500).json({
                         message: "Error while deleting faces",
                         error: err
-                    });
+                    });  
                 }
             });
         }
