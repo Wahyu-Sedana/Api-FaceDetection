@@ -17,7 +17,7 @@
 Untuk menggunakan endpoint ini, kirimkan permintaan POST dengan header Content-Type: image/jpeg dan bodi berisi gambar JPEG ke alamat http://localhost:3000/detect. Anda akan menerima respons berisi teks yang terdeteksi dalam gambar.
 
 Contoh menggunakan curl:</p>
-<p>curl -X POST http://localhost:3000/detect -H "Content-Type: image/jpeg" --data-binary @path/to/image.jpeg</p>
+<p>curl -X POST http://localhost:3004/detect -H "Content-Type: image/jpeg" --data-binary @path/to/image.jpeg</p>
   
 <h2><b>Kontribusi</b></h2>
 <p>Project ini terbuka untuk kontribusi dari siapa saja. Jika Anda ingin berkontribusi, silakan buka issue atau buat pull request.</p>
